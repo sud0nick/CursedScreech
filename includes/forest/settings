@@ -1,0 +1,9 @@
+kuro_key=/pineapple/modules/Papers/includes/ssl/PASS
+target_key=/pineapple/modules/Papers/includes/ssl/NetCli
+client_serial=C44766A600B1C216
+mcast_group=231.253.78.29
+mcast_port=19578
+target_list=/pineapple/modules/CursedScreech/includes/forest/targets.log
+activity_log=/pineapple/modules/CursedScreech/includes/forest/activity.log
+cmd_list=/pineapple/modules/CursedScreech/includes/forest/cmd.log
+hb_interval=5
