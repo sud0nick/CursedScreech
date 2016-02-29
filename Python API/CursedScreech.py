@@ -18,8 +18,8 @@ class CursedScreech:
 		
 	
 	# ==================================================
-    #        METHOD TO START THE MULTICAST THREAD
-    # ==================================================
+	#        METHOD TO START THE MULTICAST THREAD
+	# ==================================================
 	def startMulticaster(self, addr, port, heartbeatInterval = 5):
 		# Set up a heartbeat thread
 		hbt = threading.Thread(target=self.sendHeartbeat, args=(addr,port,heartbeatInterval))
