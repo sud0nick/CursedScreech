@@ -1,17 +1,29 @@
 <?php
 
 namespace pineapple;
-define('__INCLUDES__', "/pineapple/modules/CursedScreech/includes/");
-define('__SSLSTORE__', "/pineapple/modules/Papers/includes/ssl/");
-define('__FOREST__', __INCLUDES__ . 'forest/');
-define('__SETTINGS__', __FOREST__ . 'settings');
-define('__SCRIPTS__', __INCLUDES__ . "scripts/");
 
-define('__LOGS__', __INCLUDES__ . "errorlogs/");
+// Root level includes
+define('__INCLUDES__', "/pineapple/modules/CursedScreech/includes/");
+
+// Define to hook into Papers' SSL store
+define('__SSLSTORE__', "/pineapple/modules/Papers/includes/ssl/");
+
+// Main directory defines
+define('__FOREST__', __INCLUDES__ . 'forest/');
+define('__SCRIPTS__', __INCLUDES__ . "scripts/");
 define('__HELPFILES__', __INCLUDES__ . "help/");
 define('__CHANGELOGS__', __INCLUDES__ . "changelog/");
-define('__TARGETS__', __FOREST__ . "targets.log");
+define('__LOGS__', __INCLUDES__ . "errorlogs/");
 define('__TARGETLOGS__', __FOREST__ . "targetlogs/");
+
+// API defines
+define('__API_CS__', __INCLUDES__ . "api/cs/");
+define('__API_PY__', __INCLUDES__ . "api/python/");
+define('__API_DL__', __INCLUDES__ . "api/downloads/");
+
+// File location defines
+define('__SETTINGS__', __FOREST__ . 'settings');
+define('__TARGETS__', __FOREST__ . "targets.log");
 define('__COMMANDLOG__', __FOREST__ . "cmd.log");
 define('__EZCMDS__', __FOREST__ . "ezcmds");
 
@@ -67,6 +79,9 @@ class CursedScreech extends Module {
 			case 'loadEZCmds':
 				$this->loadEZCmds();
 				break;
+			case 'genPayload':
+				$this->genPayload($this->request->type);
+				break;
 		}
 	}
 	
@@ -93,7 +108,7 @@ class CursedScreech extends Module {
 		// Load the current settings from file
 		$configs = $this->loadSettings();
 		
-		// Update the current list.  We do it this so only the requested
+		// Update the current list.  We do it this way so only the requested
 		// settings are updated. Probably not necessary but whatevs.
 		foreach ($settings as $k => $v) {
 			$configs["$k"] = $v;
@@ -101,6 +116,7 @@ class CursedScreech extends Module {
 
 		// Get the serial number of the target's public cert
 		$configs['client_serial'] = exec(__SCRIPTS__ . "getCertSerial.sh " . $configs['target_key'] . ".cer");
+		$configs['kuro_serial'] = exec(__SCRIPTS__ . "getCertSerial.sh " . $configs['kuro_key'] . ".cer");
 		
 		// Push the updated settings back out to the file
 		$config_file = fopen(__SETTINGS__, "w");
@@ -243,6 +259,72 @@ class CursedScreech extends Module {
 		$dir = ($type == "forest") ? __FOREST__ : (($type == "targets") ? __TARGETLOGS__ : "");
 		if (file_exists($dir . $logName)) {
 			$this->respond(true, null, $this->downloadFile($dir . $logName));
+			return true;
+		}
+		$this->respond(false);
+		return false;
+	}
+	
+	private function genPayload($type) {
+		if ($type == "python") {
+			$dir = __API_PY__;
+			$payload = "payload.py";
+			$api = "CursedScreech.py";
+			$zip = "Python_Payload.zip";
+		} else {
+			$dir = __API_CS__;
+			$payload = "payload.cs";
+			$api = "CursedScreech.cs";
+			$zip = "CS_Payload.zip";
+		}
+		$template = "template/" . $payload;
+		
+		// Get the configs so we can push them to the payload template
+		$configs = $this->loadSettings();
+		
+		// Copy the contents of the payload template and add our configs
+		$contents = file_get_contents($dir . $template);
+		$contents = str_replace("IPAddress", $configs['mcast_group'], $contents);
+		$contents = str_replace("mcastport", $configs['mcast_port'], $contents);
+		
+		// The format of the serial number in the C# payload differs from that in the
+		// Python payload.  Therefore, we need this check here.
+		if ($type == "python") {
+			$contents = str_replace("serial", $configs['kuro_serial'], $contents);
+			$contents = str_replace("publicKey", end(explode("/", $configs['target_key'])) . ".cer", $contents);
+			$contents = str_replace("kuroKey", end(explode("/", $configs['kuro_key'])) . ".cer", $contents);
+			$contents = str_replace("privateKey", end(explode("/", $configs['target_key'])) . ".pem", $contents);
+		} else {
+			$contents = str_replace("serial", exec(__SCRIPTS__ . "bigToLittleEndian.sh " . $configs['kuro_serial']), $contents);
+			
+			// This part seems confusing but the fingerprint is returned from the script in the following format:
+			// Fingerprint=AB:CD:EF:12:34:56:78:90
+			// And the C# payload requires it to be in the following format: ABCDEF1234567890
+			// Therefore we explode the returned data into an array, keep only the second element, then run a str_replace on all ':' characters
+			
+			$ret = exec(__SCRIPTS__ . "getFingerprint.sh " . $configs['kuro_key'] . ".cer");
+			$fingerprint = implode("", explode(":", explode("=", $ret)[1]));
+			$contents = str_replace("fingerprint", $fingerprint, $contents);
+			$contents = str_replace("privateKey", "Payload." . end(explode("/", $configs['target_key'])) . ".pfx", $contents);
+		}
+		
+		
+		
+		
+		// Write the changes to the payload file
+		$fh = fopen($dir . $payload, "w");
+		fwrite($fh, $contents);
+		fclose($fh);
+		
+		// Archive the directory
+		$files = implode(" ", array($payload, $api, "Documentation.pdf"));
+		
+		// Command: ./packPayload.sh $dir -o $zip -f $files
+		exec(__SCRIPTS__ . "packPayload.sh " . $dir . " -o " . $zip . " -f \"" . $files . "\"");
+		
+		// Check if a file exists in the downloads directory
+		if (count(scandir(__API_DL__)) > 2) {
+			$this->respond(true, null, $this->downloadFile(__API_DL__ . $zip));
 			return true;
 		}
 		$this->respond(false);

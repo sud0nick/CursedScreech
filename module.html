@@ -101,11 +101,17 @@
 						</div>
 					
 						<div class="row">
-							<div class="col-md-1">
-								<button type="button" class="btn btn-success fixed-width" style="width: 175px" ng-click="updateSettings();">Save</button>
-							</div>
+							<table>
+								<tr><td style="padding-right: 20px">
+									<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="updateSettings();">Save</button>
+								</td><td style="padding-right: 20px">
+									<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="genPayload('cs');">C# Payload</button>
+								</td><td>
+									<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="genPayload('python');">Python Payload</button>
+								</td></tr>
+							</table>
 						</div>
-					
+						
 					</div>
 				</div>
 			</div>

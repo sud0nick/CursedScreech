@@ -165,6 +165,22 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		});
 	});
 	
+	$scope.genPayload = (function(type){
+		$scope.updateSettings();
+		
+		$api.request({
+			module: 'CursedScreech',
+			action: 'genPayload',
+			type: type
+		},function(response) {
+			if (response.success === true) {
+				window.location = '/api/?download=' + response.data;
+			} else {
+				console.log("Failed to archive payload files");
+			}
+		});
+	});
+	
 	$scope.loadEZCmds = (function(){
 		$api.request({
 			module: 'CursedScreech',

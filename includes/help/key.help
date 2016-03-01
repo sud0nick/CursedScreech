@@ -6,6 +6,6 @@ Displays if the private key (.pem) is encrypted.  Does not include encryption on
 When you click Select the associated key will be used.  Both the private and public key will be used for Kuro.py and only the public key will be used for the target.  This is so each program can verify the other when communicating over the network.
 <br /><br />
 <font color="red">
-Do not select encrypted keys for either Kuro or the target.  You will not be able to start the process if encrypted keys are used.
+Do not select encrypted keys for Kuro.  You will not be able to start the process if encrypted keys are used.  You may select encrypted keys for the target if you are using C# to write your payload.
 </font>
 
