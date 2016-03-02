@@ -79,6 +79,9 @@ class CursedScreech extends Module {
 			case 'loadEZCmds':
 				$this->loadEZCmds();
 				break;
+			case 'saveEZCmds':
+				$this->saveEZCmds($this->request->ezcmds);
+				break;
 			case 'genPayload':
 				$this->genPayload($this->request->type);
 				break;
@@ -188,18 +191,6 @@ class CursedScreech extends Module {
 			return $output[0];
 		}
 		return false;
-	}
-	
-	private function loadEZCmds() {
-		$contents = explode("\n", file_get_contents(__EZCMDS__));
-		$cmdDict = array();
-		foreach ($contents as $line) {
-			$cmd = explode(":", $line, 2);
-			$name = $cmd[0]; $action = $cmd[1];
-			$cmdDict[$name] = $action;
-		}
-		$this->respond(true, null, $cmdDict);
-		return $cmdDict;
 	}
 	
 	private function loadTargets() {
@@ -329,6 +320,34 @@ class CursedScreech extends Module {
 		}
 		$this->respond(false);
 		return false;
+	}
+	
+	/* ============================ */
+	/*        EZ CMD FUNCTIONS      */
+	/* ============================ */
+	
+	private function loadEZCmds() {
+		$contents = explode("\n", file_get_contents(__EZCMDS__));
+		$cmdDict = array();
+		foreach ($contents as $line) {
+			$cmd = explode(":", $line, 2);
+			$name = $cmd[0]; $action = $cmd[1];
+			$cmdDict[$name] = $action;
+		}
+		$this->respond(true, null, $cmdDict);
+		return $cmdDict;
+	}
+	
+	private function saveEZCmds($cmds) {
+		$fh = fopen(__EZCMDS__, "w");
+		if (!$fh) {
+			$this->respond(false);
+			return false;
+		}
+		foreach ($cmds as $k => $v) {
+			fwrite($fh, $k . ":" . $v . "\n");
+		}
+		fclose($fh);
 	}
 	
 	/* ============================ */

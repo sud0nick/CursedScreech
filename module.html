@@ -160,7 +160,13 @@
 									</select>
 									<br />
 									<input type="text" ng-model="targetCommand" class="form-control block" ng-disabled="kuroButton=='Start'" placeholder="Send command to target"><br />
-									<button type="button" class="btn btn-sm btn-info" style="width: 100px;" ng-disabled="kuroButton=='Start'" ng-click="sendCommand();">Send</button>
+									<table style="width: 100%">
+										<tr><td>
+											<button type="button" class="btn btn-sm btn-info" style="width: 100px;" ng-disabled="kuroButton=='Start'" ng-click="sendCommand();">Send</button>
+										</td><td align="right">
+											<button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#ezcmds_modal">EZ Cmds</button>
+										</td></tr>
+									</table>
 								</div>
 							</div>
 						
@@ -269,7 +275,84 @@
 	</div>
 	
 	<!-- ==================== -->
-	<!-- END RECVDATA MODAL -->
+	<!--  END RECVDATA MODAL  -->
+	<!-- ==================== -->
+	
+	<!-- ==================== -->
+	<!--  BEGIN EZCMDS MODAL  -->
+	<!-- ==================== -->
+	
+	<div id="ezcmds_modal" class="modal fade" rold="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h3>EZ Commands</h3>
+				</div>
+				<div class="modal-body">
+					<table class="table">
+						<thead>
+							<tr>
+								<th><button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#newEZCmdModal" ng-click="">+</button></th>
+								<th>Name</th>
+								<th>Command</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="(key, value) in ezcmds">
+								<td>
+									<button type="button" class="btn btn-sm btn-danger" ng-click="deleteEZCmd(key);">X</button>
+								</td>
+								<td style="width: 200px">
+									<label class="form-label">{{ key }}</label>
+								</td>
+								<td>
+									<input type="text" class="form-control" ng-model="ezcmds[key]" />
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<div style="text-align: center">
+						<button type="button" class="btn btn-success" style="width: 200px" ng-click="saveEZCmds();">Save</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div id="newEZCmdModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal=body">
+					<table class="table">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Command</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>
+									<input type="text" class="form-control" ng-model="newCmdName" />
+								</td>
+								<td>
+									<input type="text" class="form-control" ng-model="newCmdCommand" />
+								</td>
+								<td>
+									<button class="btn btn-success" data-toggle="modal" data-target="#newEZCmdModal" ng-click="addEZCmd();">Save</button>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!-- ==================== -->
+	<!--   END EZCMDS MODAL   -->
 	<!-- ==================== -->
 	
 	<!-- ================= -->

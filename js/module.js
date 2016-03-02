@@ -33,6 +33,8 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.targetCommand		= "";
 	$scope.ezcmds				= [];
 	$scope.selectedCmd			= "";
+	$scope.newCmdName			= "";
+	$scope.newCmdCommand		= "";
 	
 	// Interval vars
 	$scope.stop;
@@ -181,22 +183,6 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		});
 	});
 	
-	$scope.loadEZCmds = (function(){
-		$api.request({
-			module: 'CursedScreech',
-			action: 'loadEZCmds'
-		},function(response){
-			$scope.ezcmds = response.data;
-		});
-	});
-	
-	$scope.ezCommandChange = (function(){
-		if ($scope.selectedCmd === null) {
-			return;
-		}
-		$scope.targetCommand = $scope.selectedCmd;
-	});
-	
 	$scope.sendCommand = (function(){
 		if ($scope.targetCommand == "") {
 			return;
@@ -310,6 +296,65 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	/* ============================================= */
 	/*              END FOREST FUNCTIONS             */
 	/* ============================================= */
+	
+	
+	/* ============================================= */
+	/*            BEGIN EZCMDS FUNCTIONS             */
+	/* ============================================= */
+	
+	$scope.loadEZCmds = (function(){
+		$scope.ezcmdKeys = [];
+		$api.request({
+			module: 'CursedScreech',
+			action: 'loadEZCmds'
+		},function(response){
+			for (k in response.data) {
+				if (response.data[k] == null) {
+					delete(response.data[k]);
+				}
+			}
+			$scope.ezcmds = response.data;
+		});
+	});
+	
+	$scope.saveEZCmds = (function(){
+		$api.request({
+			module: 'CursedScreech',
+			action: 'saveEZCmds',
+			ezcmds: $scope.ezcmds
+		},function(response){
+			if (response.success === true){
+				
+			}
+		});
+	});
+	
+	$scope.deleteEZCmd = (function(key){
+		for (k in $scope.ezcmds) {
+			if (k == key) {
+				delete($scope.ezcmds[k]);
+				$scope.saveEZCmds();
+			}
+		}
+	});
+	
+	$scope.addEZCmd = (function(){
+		$scope.ezcmds[$scope.newCmdName] = $scope.newCmdCommand;
+		$scope.saveEZCmds();
+		$scope.newCmdName = $scope.newCmdCommand = "";
+	});
+	
+	$scope.ezCommandChange = (function(){
+		if ($scope.selectedCmd === null) {
+			return;
+		}
+		$scope.targetCommand = $scope.selectedCmd;
+	});
+	
+	/* ============================================= */
+	/*              END EZCMDS FUNCTIONS             */
+	/* ============================================= */
+	
 	
 	/* ============================================= */
 	/*              BEGIN KEY FUNCTIONS              */
