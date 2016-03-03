@@ -87,6 +87,15 @@
 									</div>
 								</div>
 								<div class="row form-group">
+									<label class="col-md-2 control-label">Heartbeat Interval</label>
+									<div class="col-md-6">
+										<input type="text" ng-model="settings_hb_interval" class="form-control">
+									</div>
+									<div class="col-md-2">
+										<button type="button" class="btn btn-sm" ng-click="useDefault('hb_interval');">Default</button>
+									</div>
+								</div>
+								<div class="row form-group">
 									<label class="col-md-2 control-label">Kuro Keys</label>
 									<div class="col-md-6">
 										<input type="text" ng-model="settings_kuroKey" class="form-control">
@@ -443,10 +452,10 @@
 	
 	<div class="col-md-12">
 		<div class="panel panel-default">
-			<div class="panel-heading">
+			<div class="panel-heading pointer" data-toggle="collapse" data-target="#errorlog">
 				<h3 class="panel-title">Error Logs</h3>
 			</div>
-			<div class="panel-body">
+			<div id="errorlog" class="panel-body panel-collapse collapse">
 				<table class="table">
 					<thead>
 						<tr>
@@ -472,7 +481,7 @@
 			<div class="panel-heading pointer" data-toggle="collapse" data-target="#changelog">
 				<h3 class="panel-title">Change Log</h3>
 			</div>
-			<div id="changelog" class="panel-collapse collapse">
+			<div id="changelog" class="panel-body panel-collapse collapse">
 				<table class="table">
 				<thead>
 					<tr>

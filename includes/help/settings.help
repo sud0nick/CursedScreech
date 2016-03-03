@@ -8,6 +8,12 @@ This is the port on which Sein will receive messages from targets.  This same po
 reflected in the startMulticaster() method of your payload.
 <br /><br />
 
+<h4>Heartbeat Interval</h4>
+The interval at which the payload will broadcast its listening address to Sein.  Sein uses this 
+value, multiplied by 3, to determine if a target has dropped off the network (i.e. three heartbeats 
+have been missed, therefore, the target must be offline).
+<br /><br />
+
 <h4>Kuro Keys</h4>
 The set of keys that Kuro will use for TLS communication.  Your payload will verify Kuro's public 
 certificate if you use the API (which you should).

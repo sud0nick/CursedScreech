@@ -12,6 +12,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	// Settings vars
 	$scope.settings_mcastGroup	= '';
 	$scope.settings_mcastPort	= '';
+	$scope.settings_hb_interval	= '';
 	$scope.settings_kuroKey		= '';
 	$scope.settings_targetKey	= '';
 	
@@ -40,6 +41,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.selectedCmd			= "";
 	$scope.newCmdName			= "";
 	$scope.newCmdCommand		= "";
+	$scope.checkAllTargets		= false;
 	
 	// Interval vars
 	$scope.stop;
@@ -86,6 +88,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 				var configs = response.data;
 				$scope.settings_mcastGroup = configs.mcast_group;
 				$scope.settings_mcastPort = configs.mcast_port;
+				$scope.settings_hb_interval = configs.hb_interval;
 				$scope.settings_kuroKey = configs.kuro_key;
 				$scope.settings_targetKey = configs.target_key;
 			}
@@ -98,6 +101,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		data = {
 			'mcast_group': $scope.settings_mcastGroup,
 			'mcast_port': $scope.settings_mcastPort,
+			'hb_interval': $scope.settings_hb_interval,
 			'kuro_key': $scope.settings_kuroKey,
 			'target_key': $scope.settings_targetKey
 		};
@@ -120,6 +124,8 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			$scope.settings_mcastGroup = '231.253.78.29';
 		} else if (setting == "mcast_port") {
 			$scope.settings_mcastPort = '19578';
+		} else if (setting == "hb_interval") {
+			$scope.settings_hb_interval = "5";
 		}
 	});
 
@@ -205,8 +211,6 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	/* ============================================= */
 	
 	$scope.genPayload = (function(type){
-		$scope.updateSettings();
-		
 		$api.request({
 			module: 'CursedScreech',
 			action: 'genPayload',
@@ -216,6 +220,17 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 				window.location = '/api/?download=' + response.data;
 			} else {
 				console.log("Failed to archive payload files");
+			}
+		});
+	});
+	
+	$scope.clearDownloads = (function(){
+		$api.request({
+			module: 'CursedScreech',
+			action: 'clearDownloads'
+		},function(response){
+			if (response.success === false){
+				console.log("Failed to clear API downloads directory.");
 			}
 		});
 	});
@@ -264,11 +279,17 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	}
 	
 	$scope.selectAllTargets = (function(){
+		if ($scope.checkAllTargets) {
+			// Set to false if currently true
+			$scope.checkAllTargets = false;
+		} else {
+			$scope.checkAllTargets = true;
+		}
 		for (var x=0; x < $scope.targets.length; x++){
-			if ($scope.targets[x].checked) {
-				$scope.targets[x].checked = false;
-			} else {
+			if ($scope.checkAllTargets) {
 				$scope.targets[x].checked = true;
+			} else {
+				$scope.targets[x].checked = false;
 			}
 		}
 	});
@@ -519,6 +540,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.loadEZCmds();
 	$scope.getLogs('changelog');
 	$scope.depends('check');
+	$scope.clearDownloads();
 	
 	$scope.stop = $interval(function(){
 		$scope.refreshLogs();

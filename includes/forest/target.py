@@ -47,7 +47,9 @@ class Target:
 		try:
 			sck = socket(AF_INET, SOCK_STREAM)
 			self.socket = wrap_socket(sck, ssl_version=PROTOCOL_SSLv23, keyfile=priv_key, certfile=pub_cer, cert_reqs=CERT_REQUIRED, ca_certs=client_key)
+			self.socket.settimeout(10)
 			self.socket.connect((self.addr,self.port))
+			self.socket.settimeout(None)
 		
 			# Fetch the target's certificate to verify their identity
 			cert = self.socket.getpeercert()
@@ -64,8 +66,9 @@ class Target:
 			self.connected = False
 
 	def send(self, data):
-		self.socket.sendall(data.encode())
-		logActivity("[!] Command sent to " + self.sockName())
+		if self.isConnected():
+			self.socket.sendall(data.encode())
+			logActivity("[!] Command sent to " + self.sockName())
 		
 	def recv(self):
 		if self.isConnected():
@@ -74,9 +77,7 @@ class Target:
 				self.recvData = d.decode()
 			
 				if not self.recvData:
-					print "[!] Target " + self.sockName() + " disconnected. Connection closed."
-					logActivity("[!] Target " + self.sockName() + " disconnected. Connection closed.")
-					self.connected = False
+					self.disconnect()
 					return
 			
 				logReceivedData(self.recvData + "\n", self.addr)

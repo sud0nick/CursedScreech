@@ -88,6 +88,9 @@ class CursedScreech extends Module {
 			case 'genPayload':
 				$this->genPayload($this->request->type);
 				break;
+			case 'clearDownloads':
+				$this->clearDownloads();
+				break;
 		}
 	}
 	
@@ -312,6 +315,7 @@ class CursedScreech extends Module {
 		$contents = file_get_contents($dir . $template);
 		$contents = str_replace("IPAddress", $configs['mcast_group'], $contents);
 		$contents = str_replace("mcastport", $configs['mcast_port'], $contents);
+		$contents = str_replace("hbinterval", $configs['hb_interval'], $contents);
 		
 		// The format of the serial number in the C# payload differs from that in the
 		// Python payload.  Therefore, we need this check here.
@@ -334,9 +338,6 @@ class CursedScreech extends Module {
 			$contents = str_replace("privateKey", "Payload." . end(explode("/", $configs['target_key'])) . ".pfx", $contents);
 		}
 		
-		
-		
-		
 		// Write the changes to the payload file
 		$fh = fopen($dir . $payload, "w");
 		fwrite($fh, $contents);
@@ -355,6 +356,19 @@ class CursedScreech extends Module {
 		}
 		$this->respond(false);
 		return false;
+	}
+	
+	private function clearDownloads() {
+		$files = scandir(__API_DL__);
+		$success = true;
+		foreach ($files as $file) {
+			if ($file == "." || $file == "..") {continue;}
+			if (!unlink(__API_DL__ . $file)) {
+				$success = false;
+			}
+		}
+		$this->respond($success);
+		return $success;
 	}
 	
 	/* ============================ */
