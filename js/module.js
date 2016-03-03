@@ -5,6 +5,10 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.showSeinThrobber		= false;
 	$scope.showKuroThrobber		= false;
 	
+	// Depends vars
+	$scope.dependsProcessing	= false;
+	$scope.dependsInstalled		= false;
+	
 	// Settings vars
 	$scope.settings_mcastGroup	= '';
 	$scope.settings_mcastPort	= '';
@@ -22,6 +26,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.currentLogData		= '';
 	$scope.activityLogData		= '';
 	$scope.targets				= [];
+	$scope.allTargetLogs		= [];
 	
 	// Key vars
 	$scope.certificates			= '';
@@ -40,8 +45,38 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.stop;
 	
 	/* ============================================= */
+	/*            BEGIN DEPENDS FUNCTIONS            */
+	/* ============================================= */
+	
+	$scope.depends = (function(task){
+		if (task == "install" || task == "remove") {
+			$scope.dependsProcessing = true;
+		}
+		$api.request({
+			module: 'CursedScreech',
+			action: 'depends',
+			task: task
+		},function(response) {
+			if (task == "install") {
+				$scope.dependsProcessing = false;
+				if (response.success === false) {
+					alert("Failed to install dependencies.  Make sure you are connected to the internet.");
+				} else {
+					$scope.depends("check");
+				}
+			} else if (task == "remove") {
+				$scope.dependsProcessing = false;
+				$scope.depends("check");
+			} else if (task == "check") {
+				$scope.dependsInstalled = (response.success === true) ? true : false;
+			}
+		});
+	});
+	
+	/* ============================================= */
 	/*            BEGIN SETTINGS FUNCTIONS           */
 	/* ============================================= */
+	
 	$scope.loadSettings = (function(){
 		$api.request({
 			module: 'CursedScreech',
@@ -87,12 +122,10 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			$scope.settings_mcastPort = '19578';
 		}
 	});
-	/* ============================================= */
-	/*             END SETTINGS FUNCTIONS            */
-	/* ============================================= */
+
 	
 	/* ============================================= */
-	/*             BEGIN FOREST FUNCTIONS            */
+	/*            BEGIN PROCESS FUNCTIONS            */
 	/* ============================================= */
 	
 	$scope.startProc = (function(name){
@@ -167,6 +200,10 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		});
 	});
 	
+	/* ============================================= */
+	/*            BEGIN PAYLOAD FUNCTIONS            */
+	/* ============================================= */
+	
 	$scope.genPayload = (function(type){
 		$scope.updateSettings();
 		
@@ -182,6 +219,10 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			}
 		});
 	});
+	
+	/* ============================================= */
+	/*            BEGIN TARGET FUNCTIONS             */
+	/* ============================================= */
 	
 	$scope.sendCommand = (function(){
 		if ($scope.targetCommand == "") {
@@ -203,19 +244,6 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			command: $scope.targetCommand,
 			targets: checkedTargets
 		},function(response){});
-	});
-	
-	$scope.downloadLog = (function(name,type){
-		$api.request({
-			module: 'CursedScreech',
-			action: 'downloadLog',
-			logName: name,
-			logType: type
-		},function(response){
-			if (response.success === true) {
-				window.location = '/api/?download=' + response.data;
-			}
-		});
 	});
 	
 	function getTargetIndex(sock){
@@ -279,7 +307,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	});
 	
 	$scope.clearTargets = (function(){
-		$scope.clearLog('targets.log', 'targets');
+		$scope.clearLog('targets.log', 'forest');
 		$scope.targets = [];
 	});
 	
@@ -292,10 +320,6 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			$scope.loadTargets();
 		});
 	});
-	
-	/* ============================================= */
-	/*              END FOREST FUNCTIONS             */
-	/* ============================================= */
 	
 	
 	/* ============================================= */
@@ -330,6 +354,9 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	});
 	
 	$scope.deleteEZCmd = (function(key){
+		if (!confirm("Delete " + key + "?")) {
+			return;
+		}
 		for (k in $scope.ezcmds) {
 			if (k == key) {
 				delete($scope.ezcmds[k]);
@@ -339,6 +366,9 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	});
 	
 	$scope.addEZCmd = (function(){
+		if (!$scope.newCmdName || !$scope.newCmdCommand) {
+			return;
+		}
 		$scope.ezcmds[$scope.newCmdName] = $scope.newCmdCommand;
 		$scope.saveEZCmds();
 		$scope.newCmdName = $scope.newCmdCommand = "";
@@ -350,10 +380,6 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		}
 		$scope.targetCommand = $scope.selectedCmd;
 	});
-	
-	/* ============================================= */
-	/*              END EZCMDS FUNCTIONS             */
-	/* ============================================= */
 	
 	
 	/* ============================================= */
@@ -393,12 +419,9 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	});
 	
 	/* ============================================= */
-	/*               END KEY FUNCTIONS               */
-	/* ============================================= */
-	
-	/* ============================================= */
 	/*               BEGIN LOG FUNCTIONS             */
 	/* ============================================= */
+	
 	$scope.getLogs = (function(type){
 		/* valid types are error or changelog */
 		$api.request({
@@ -410,6 +433,8 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 				$scope.logs = response.data;
 			} else if (type == 'changelog') {
 				$scope.changelogs = response.data;
+			} else if (type == 'targets') {
+				$scope.allTargetLogs = response.data;
 			}
 		});
 	});
@@ -432,6 +457,19 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		});
 	});
 	
+	$scope.downloadLog = (function(name,type){
+		$api.request({
+			module: 'CursedScreech',
+			action: 'downloadLog',
+			logName: name,
+			logType: type
+		},function(response){
+			if (response.success === true) {
+				window.location = '/api/?download=' + response.data;
+			}
+		});
+	});
+	
 	$scope.clearLog = (function(log,type){
 		$api.request({
 			module: 'CursedScreech',
@@ -441,32 +479,36 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		},function(response){});
 	});
 
-	$scope.deleteLog = (function(log){
+	$scope.deleteLog = (function(log, type){
+		if (!confirm("Delete " + log + "?")) {
+			return;
+		}
 		$api.request({
 			module: 'CursedScreech',
 			action: 'deleteLog',
-			logName: log
+			logName: log,
+			type: type
 		},function(response){
-			$scope.getLogs('error');
-			if (response === false) {
+			if (type == 'targets') {
+				$scope.getLogs('targets');
+			}
+			if (response.success === false) {
 				alert(response.message);
 			}
 		});
 	});
 	
 	$scope.refreshLogs = (function(){
+		$scope.getLogs("error");
 		$scope.loadTargets();
 		$scope.readLog("activity.log", "forest");
-		$scope.getLogs("error");
 	});
-	/* ============================================= */
-	/*                END LOG FUNCTIONS              */
-	/* ============================================= */
 	
 	
 	/* ============================================= */
 	/*                  INITIALIZERS                 */
 	/* ============================================= */
+	
 	// Not sure if this is ever reached
 	$scope.$on('$destroy', function(){
 		$interval.cancel($scope.stop);
@@ -476,10 +518,12 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.loadSettings();
 	$scope.loadEZCmds();
 	$scope.getLogs('changelog');
+	$scope.depends('check');
+	
 	$scope.stop = $interval(function(){
 		$scope.refreshLogs();
 		$scope.procStatus('sein.py');
 		$scope.procStatus('kuro.py');
-	}, 1000);
+	}, 2000);
 	
 }])

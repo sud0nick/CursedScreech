@@ -30,6 +30,9 @@ define('__EZCMDS__', __FOREST__ . "ezcmds");
 class CursedScreech extends Module {
 	public function route() {
 		switch ($this->request->action) {
+			case 'depends':
+				$this->depends($this->request->task);
+				break;
 			case 'loadSettings':
 				$this->loadSettings();
 				break;
@@ -46,7 +49,7 @@ class CursedScreech extends Module {
 				$this->clearLog($this->request->logName, $this->request->type);
 				break;
 			case 'deleteLog':
-				$this->deleteLog($this->request->logName);
+				$this->deleteLog($this->request->logName, $this->request->type);
 				break;
 			case 'startProc':
 				$this->startProc($this->request->procName);
@@ -85,6 +88,38 @@ class CursedScreech extends Module {
 			case 'genPayload':
 				$this->genPayload($this->request->type);
 				break;
+		}
+	}
+	
+	/* ============================ */
+	/*      DEPENDS FUNCTIONS       */
+	/* ============================ */
+	
+	private function depends($action) {
+		$retData = array();
+		
+		if ($action == "install") {
+			exec(__SCRIPTS__ . "installDepends.sh", $retData);
+			if (implode(" ", $retData) == "Complete") {
+				$this->respond(true);
+				return true;
+			} else {
+				$this->respond(false);
+				return false;
+			}
+		} else if ($action == "remove") {
+			exec(__SCRIPTS__ . "removeDepends.sh");
+			$this->respond(true);
+			return true;
+		} else if ($action == "check") {
+			exec(__SCRIPTS__ . "checkDepends.sh", $retData);
+			if (implode(" ", $retData) == "Installed") {
+				$this->respond(true);
+				return true;
+			} else {
+				$this->respond(false);
+				return false;
+			}
 		}
 	}
 	
@@ -362,7 +397,7 @@ class CursedScreech extends Module {
 	/*         LOG FUNCTIONS        */
 	/* ============================ */
 	private function getLogs($type) {
-		$dir = ($type == "error") ? __LOGS__ : __CHANGELOGS__;
+		$dir = ($type == "error") ? __LOGS__ : (($type == "targets") ? __TARGETLOGS__ : __CHANGELOGS__);
 		$contents = array();
 		foreach (scandir($dir) as $log) {
 			if ($log == "." || $log == "..") {continue;}
@@ -388,9 +423,10 @@ class CursedScreech extends Module {
 		$this->respond(true);
 	}
 	
-	private function deleteLog($logname) {
-		$data = unlink(__LOGS__ . $logname);
-		if (!$data) {
+	private function deleteLog($logname, $type) {
+		$dir = ($type == "error") ? __LOGS__ : (($type == "targets") ? __TARGETLOGS__ : __CHANGELOGS__);
+		$res = unlink($dir . $logname);
+		if (!$res) {
 			$this->respond(false, "Failed to delete log.");
 			return;
 		}

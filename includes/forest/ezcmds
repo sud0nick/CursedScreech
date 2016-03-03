@@ -4,4 +4,3 @@ Windows Alert:powershell "[System.Reflection.Assembly]::LoadWithPartialName('Sys
 Get PS Version:powershell "$PSVersionTable"
 Shutdown:powershell "Stop-Computer"
 Restart:powershell "Restart-Computer"
-Add self to system startup:tba

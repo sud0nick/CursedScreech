@@ -18,18 +18,25 @@
 					</div>
 					<br />
 					<div class="row">
-						<div class="col-md-4">
+						<div class="col-md-3">
 							<button type="button" class="btn btn-sm btn-success" ng-show="seinButton=='Start'" ng-hide="seinButton=='Stop'" ng-class="{'disabled': showSeinThrobber}" ng-click="startProc('sein.py');">Start</button>
 							<button type="button" class="btn btn-sm btn-danger" ng-show="seinButton=='Stop'" ng-hide="seinButton=='Start'" ng-class="{'disabled': showSeinThrobber}" ng-click="stopProc('sein.py');">Stop</button>
 							<h4 ng-show="!showSeinThrobber" ng-hide="showSeinThrobber">Sein: {{ seinStatus }}</h4>
 							<h4 ng-show="showSeinThrobber" ng-hide="!showSeinThrobber">Sein: <img src='/img/throbber.gif'/></h4>
 						</div>
 						
-						<div class="col-md-4">
+						<div class="col-md-3">
 							<button type="button" class="btn btn-sm btn-success" ng-show="kuroButton=='Start'" ng-hide="kuroButton=='Stop'" ng-class="{'disabled': showKuroThrobber}" ng-click="startProc('kuro.py');">Start</button>
 							<button type="button" class="btn btn-sm btn-danger" ng-show="kuroButton=='Stop'" ng-hide="kuroButton=='Start'" ng-class="{'disabled': showKuroThrobber}" ng-click="stopProc('kuro.py');">Stop</button>
 							<h4 ng-show="!showKuroThrobber" ng-hide="showKuroThrobber">Kuro: {{ kuroStatus }}</h4>
 							<h4 ng-show="showKuroThrobber" ng-hide="!showKuroThrobber">Kuro: <img src='/img/throbber.gif'/></h4>
+						</div>
+						
+						<div class="col-md-3">
+							<button type="button" class="btn btn-sm btn-success" ng-show="!dependsInstalled" ng-hide="dependsInstalled" ng-click="depends('install');">Install</button>
+							<button type="button" class="btn btn-sm btn-danger" ng-show="dependsInstalled" ng-hide="!dependsInstalled" ng-click="depends('remove');">Uninstall</button>
+							<img ng-show="dependsProcessing" ng-hide="!dependsProcessing" src='/img/throbber.gif'/>
+							<h4>Dependencies</h4>
 						</div>
 					</div>
 					
@@ -101,15 +108,15 @@
 						</div>
 					
 						<div class="row">
-							<table>
-								<tr><td style="padding-right: 20px">
-									<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="updateSettings();">Save</button>
-								</td><td style="padding-right: 20px">
-									<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="genPayload('cs');">C# Payload</button>
-								</td><td>
-									<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="genPayload('python');">Python Payload</button>
-								</td></tr>
-							</table>
+							<div class="col-md-2" style="padding-top: 5px">
+								<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="updateSettings();">Save</button>
+							</div>
+							<div class="col-md-2" style="padding-top: 5px">
+								<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="genPayload('cs');">C# Payload</button>
+							</div>
+							<div class="col-md-2" style="padding-top: 5px">
+								<button type="button" class="btn btn-info fixed-width" style="width:175px" ng-click="genPayload('python');">Python Payload</button>
+							</div>
 						</div>
 						
 					</div>
@@ -136,6 +143,10 @@
 				<div id="cs_activityLog" class="panel-collapse collapse">
 					<div class="panel-body">
 						<div class="container-fluid">
+							<div class="pull-right">
+								<button type="button" class="btn" data-toggle="modal" data-target="#cs_viewLogInfo" ng-click="readLog('activitylog.help','help');">?</button>
+								<br /><br />
+							</div>
 							<textarea ng-model="activityLogData" style="width: 100%; height: 220px" readonly></textarea>
 							<button type="button" class="btn btn-info" ng-click="clearLog('activity.log', 'forest');">Clear Log</button>
 							<button type="button" class="btn btn-info" ng-click="downloadLog('activity.log', 'forest');">Download</button>
@@ -153,7 +164,12 @@
 				<div id="cs_targetLog" class="panel-collapse collapse">
 					<div class="panel-body">
 						<div class="container-fluid">
-						
+							
+							<div class="pull-right">
+								<button type="button" class="btn" data-toggle="modal" data-target="#cs_viewLogInfo" ng-click="readLog('targets.help','help');">?</button>
+								<br /><br />
+							</div>
+							
 							<div class="form-group">
 								<div class="form-group">
 									<select class="form-control block" ng-model="selectedCmd" ng-disabled="kuroButton=='Start'" ng-change="ezCommandChange();" ng-options="value as key for (key, value) in ezcmds">
@@ -192,7 +208,13 @@
 									</tbody>
 								</table>
 							</div>
-							<button type="button" class="btn btn-sm btn-info" style="width: 100px;" ng-click="clearTargets();">Clear Targets</button>
+							<table style="width: 100%">
+								<tr><td>
+									<button type="button" class="btn btn-sm btn-info" style="width: 100px;" ng-click="clearTargets();">Clear Targets</button>
+								</td><td align="right">
+									<button type="button" class="btn btn-sm btn-info" style="width: 100px;" data-toggle="modal" data-target="#cs_allTargetLogs" ng-click="getLogs('targets');">All Logs</button>
+								</td></tr>
+							</table>
 						</div>
 					</div>
 				</div>
@@ -255,28 +277,6 @@
 	<!-- ================= -->
 	<!--   END KEY MODAL   -->
 	<!-- ================= -->
-	
-	<!-- ==================== -->
-	<!-- BEGIN RECVDATA MODAL -->
-	<!-- ==================== -->
-	
-	<div id="cs_viewRecvData" class="modal fade" style="max-height: 900px; overflow-y:auto;" role="dialog">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<div class="modal-header">
-					<button type="button" class="close" data-dismiss="modal">&times;</button>
-					<h3>{{ currentLogTitle }}</h3>
-				</div>
-				<div class="modal-body">
-					<pre>{{ currentLogData }}</pre>
-				</div>
-			</div>
-		</div>
-	</div>
-	
-	<!-- ==================== -->
-	<!--  END RECVDATA MODAL  -->
-	<!-- ==================== -->
 	
 	<!-- ==================== -->
 	<!--  BEGIN EZCMDS MODAL  -->
@@ -355,9 +355,69 @@
 	<!--   END EZCMDS MODAL   -->
 	<!-- ==================== -->
 	
-	<!-- ================= -->
-	<!--  BEGIN LOG MODAL  -->
-	<!-- ================= -->
+	<!-- ======================== -->
+	<!--  BEGIN TARGET LOG MODAL  -->
+	<!-- ======================== -->
+	
+	<div id="cs_allTargetLogs" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h3>All Target Logs</h3>
+				</div>
+				<div class="modal-body">
+					<table class="table">
+						<thead>
+							<th>Socket</th>
+							<th> Recv Log</th>
+						</thead>
+						<tbody>
+							<tr ng-repeat="log in allTargetLogs">
+								<td>{{ log }}</td>
+								<td>
+									<button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#cs_viewRecvData" ng-click="readLog(log, 'targets');">View</button>
+									<button type="button" class="btn btn-sm btn-info" ng-click="downloadLog(log, 'targets');">Download</button>
+									<button type="button" class="btn btn-sm btn-danger" ng-click="deleteLog(log, 'targets');">Delete</button>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!-- ====================== -->
+	<!--  END TARGET LOG MODAL  -->
+	<!-- ====================== -->
+	
+	<!-- ==================== -->
+	<!-- BEGIN RECVDATA MODAL -->
+	<!-- ==================== -->
+	
+	<div id="cs_viewRecvData" class="modal fade" style="max-height: 900px; overflow-y:auto;" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h3>{{ currentLogTitle }}</h3>
+				</div>
+				<div class="modal-body">
+					<pre>{{ currentLogData }}</pre>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!-- ==================== -->
+	<!--  END RECVDATA MODAL  -->
+	<!-- ==================== -->
+	
+	
+	<!-- =================== -->
+	<!--   BEGIN LOG MODAL   -->
+	<!-- =================== -->
 	
 	<div id="cs_viewLogInfo" class="modal fade" role="dialog">
 		<div class="modal-dialog">
@@ -398,7 +458,7 @@
 							<td>{{ log }}</td>
 							<td>
 								<button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#cs_viewLogInfo" ng-click="readLog(log, 'error');">View</button>
-								<button type="button" class="btn btn-sm btn-danger" ng-click="deleteLog(log);">Delete</button>
+								<button type="button" class="btn btn-sm btn-danger" ng-click="deleteLog(log, 'error');">Delete</button>
 							</td>
 						</tr>
 					</tbody>

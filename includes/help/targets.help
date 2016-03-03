@@ -1,0 +1,26 @@
+<h4>EZ Cmds (select)</h4>
+Pre-configured commands that can be sent to targets.
+<br /><br />
+
+<h4>EZ Cmds (button)</h4>
+Open the EZ Cmds manager where you can add, edit, or delete EZ Cmds that appear in the list.
+<br /><br />
+
+<h4>Send command to target</h4>
+Manually enter a command to send to targets.  If there is anything in this field EZ Cmds will not 
+be used even if one is selected.
+<br /><br />
+
+<h4>Target List</h4>
+Displays the targets that are currently sending heartbeats to Sein.  You can view, download, 
+and clear received data.
+<br /><br />
+
+<h4>Clear Targets</h4>
+Clears the target list.  If targets are still online and sending heartbeats to Sein they will 
+reappear in the list.
+<br /><br />
+
+<h4>All Logs</h4>
+View, download, and delete logs from clients who were once connected but no longer show up in the 
+target list.
