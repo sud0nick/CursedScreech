@@ -6,7 +6,7 @@ Order of work left on this module:
 
 1. ~~Finish C# API~~
 2. ~~Write equivalent Python library~~
-3. Put finishing touches on web interface
+3. ~~Put finishing touches on web interface~~
 4. Test, Test, Test
 5. Finish documentation and video guide
 7. Release on Module Manager
