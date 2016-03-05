@@ -1,14 +1,12 @@
 <h4>Sein</h4>
 Sein is our information gatherer.  It listens on the multicast group and port in Settings and 
-updates our target list when a compromised system is found.  If a target does not send out 
-a heartbeat within three times the interval length it will be considered disconnected and 
-removed from the target list.
+updates our target list when a compromised system is found.
 <br /><br />
 
 <h4>Kuro</h4>
 Kuro is our attacker that sends out commands to the clients you select.  At startup it attempts to 
-connect to all clients in the list.  If Sein finds new targets while Kuro is running Kuro will not 
-connect to them until restarted.  Commands are sent asynchronously and returned data is received 
+connect to all clients in the list.  If Sein finds new targets while Kuro is running, connections to 
+them will be attempted automatically.  Commands are sent asynchronously and returned data is received 
 in the same manner.
 <br /><br />
 

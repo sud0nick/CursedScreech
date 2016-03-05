@@ -68,23 +68,26 @@ class Target:
 	def send(self, data):
 		if self.isConnected():
 			self.socket.sendall(data.encode())
+			logReceivedData(data, self.addr)
 			logActivity("[!] Command sent to " + self.sockName())
 		
 	def recv(self):
-		if self.isConnected():
-			try:
-				d = self.socket.recv(4096)
-				self.recvData = d.decode()
-			
-				if not self.recvData:
-					self.disconnect()
-					return
-			
-				logReceivedData(self.recvData + "\n", self.addr)
-				logActivity("[+] Data received from: " + self.sockName())
+		try:
+			d = self.socket.recv(4096)
+			self.recvData = d.decode()
 		
-			except KeyboardInterrupt:
+			if not self.recvData:
+				self.disconnect()
 				return
+			
+			logReceivedData(self.recvData, self.addr)
+			logActivity("[+] Data received from: " + self.sockName())
+		
+		except KeyboardInterrupt:
+			return
+				
+		except:
+			self.disconnect()
 			
 	def isConnected(self):
 		return self.connected
@@ -94,7 +97,10 @@ class Target:
 	
 	def disconnect(self):
 		logActivity("[!] Closing connection to " + self.sockName())
-		self.socket.shutdown(SHUT_RDWR)
+		try:
+			self.socket.shutdown(SHUT_RDWR)
+		except:
+			pass
 		self.socket.close()
 		self.connected = False
 		

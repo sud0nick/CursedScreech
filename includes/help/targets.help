@@ -7,8 +7,7 @@ Open the EZ Cmds manager where you can add, edit, or delete EZ Cmds that appear 
 <br /><br />
 
 <h4>Send command to target</h4>
-Manually enter a command to send to targets.  If there is anything in this field EZ Cmds will not 
-be used even if one is selected.
+Manually enter a command to send to targets.
 <br /><br />
 
 <h4>Target List</h4>
@@ -22,5 +21,5 @@ reappear in the list.
 <br /><br />
 
 <h4>All Logs</h4>
-View, download, and delete logs from clients who were once connected but no longer show up in the 
-target list.
+View, download, and delete logs from all clients, even those who were once connected but no longer 
+show up in the target list.

