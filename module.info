@@ -1,6 +1,6 @@
 {
     "title": "CursedScreech",
-    "description": "Mass communicator",
-    "version": "1.0",
+    "description": "Control compromised systems over TLS.",
+    "version": "1.1",
     "author": "sud0nick"
 }

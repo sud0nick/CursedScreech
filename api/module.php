@@ -298,13 +298,20 @@ class CursedScreech extends Module {
 		if ($type == "python") {
 			$dir = __API_PY__;
 			$payload = "payload.py";
-			$api = "CursedScreech.py";
+			$api = "PineappleModules.py";
 			$zip = "Python_Payload.zip";
-		} else {
+		} else if ($type == "cs") {
 			$dir = __API_CS__;
 			$payload = "payload.cs";
-			$api = "CursedScreech.cs";
+			$api = "PineappleModules.cs";
 			$zip = "CS_Payload.zip";
+		} else if ($type == "cs_auth") {
+			$dir = __API_CS__;
+			$payload = "payloadAuth.cs";
+			$api = "PineappleModules.cs";
+			$zip = "CS_Auth_Payload.zip";
+		} else {
+			return null;
 		}
 		$template = "template/" . $payload;
 		

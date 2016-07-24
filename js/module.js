@@ -15,6 +15,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.settings_hb_interval	= '';
 	$scope.settings_kuroKey		= '';
 	$scope.settings_targetKey	= '';
+	$scope.settings_auth		= false;
 	
 	// Proc statuses
 	$scope.seinStatus			= 'Not Running';
@@ -91,6 +92,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 				$scope.settings_hb_interval = configs.hb_interval;
 				$scope.settings_kuroKey = configs.kuro_key;
 				$scope.settings_targetKey = configs.target_key;
+				$scope.settings_auth = (configs.auth == 1) ? true : false;
 			}
 		});
 	});
@@ -103,7 +105,8 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			'mcast_port': $scope.settings_mcastPort,
 			'hb_interval': $scope.settings_hb_interval,
 			'kuro_key': $scope.settings_kuroKey,
-			'target_key': $scope.settings_targetKey
+			'target_key': $scope.settings_targetKey,
+			'auth': $scope.settings_auth
 		};
 		
 		// Make the request to update the settings
@@ -126,6 +129,8 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			$scope.settings_mcastPort = '19578';
 		} else if (setting == "hb_interval") {
 			$scope.settings_hb_interval = "5";
+		} else if (setting == "auth") {
+			$scope.settings_auth = false;
 		}
 	});
 
@@ -211,6 +216,13 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	/* ============================================= */
 	
 	$scope.genPayload = (function(type){
+		
+		// Check if PortalAuth authorization should be used
+		// if so change the type to 'cs_auth'
+		if (type == "cs" && $scope.settings_auth == true) {
+			type = "cs_auth";
+		}
+		
 		$api.request({
 			module: 'CursedScreech',
 			action: 'genPayload',

@@ -1,4 +1,4 @@
-from CursedScreech import CursedScreech
+from PineappleModules import CursedScreech
 
 cs = CursedScreech("Network Client")
 cs.startMulticaster("IPAddress", mcastport, hbinterval)
