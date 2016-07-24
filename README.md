@@ -1,15 +1,6 @@
 # CursedScreech
 
-A mass communicator module for the WiFi Pineapple that utilizes TLS to control a botnet of compromised systems.  Included is a C# API and Python API (with documentation) to write payloads that can communicate with CursedScreech.
-
-Order of work left on this module:
-
-1. ~~Finish C# API~~
-2. ~~Write equivalent Python library~~
-3. ~~Put finishing touches on web interface~~
-4. ~~Test, Test, Test~~
-5. ~~Finish documentation and video guide~~
-7. ~~Release on Module Manager~~
+A mass communicator module for the WiFi Pineapple that utilizes TLS to control a botnet of compromised systems.  Included is a C# API and Python API (with documentation) to write payloads that can communicate with CursedScreech and PortalAuth.
 
 
 # APIs
@@ -40,6 +31,23 @@ namespace Payload
             e.Cancel = true;
             this.Hide();
         }
+        private void accessKeyButton_Click(object sender, EventArgs e) {
+			
+			// Request an access key from the Pineapple
+            string key = pauth.getAccessKey();
+
+            // Check if a key was returned
+            string msg;
+            if (key.Length > 0) {
+                msg = "Your access key is unique to you so DO NOT give it away!\n\nAccess Key: " + key;
+            }
+            else {
+                msg = "Failed to retrieve an access key from the server.  Please try again later.";
+            }
+
+            // Display message to the user
+            MessageBox.Show(msg);
+		}
     }
 }
 
