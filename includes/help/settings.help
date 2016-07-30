@@ -1,3 +1,8 @@
+<h4>Listening Interface</h4>
+This is the interface that will be used for the multicast socket.  br-lan is the Pineapple 
+network and is what you will use if your targets are connecting to your Pineapple directly.
+<br /><br />
+
 <h4>Multicast Group</h4>
 This is the address on which target heartbeats will be sent and received.  The group needs to be 
 the same for both Sein and your targets in order for Sein to receive the messages.

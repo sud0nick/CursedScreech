@@ -69,6 +69,13 @@
 						<div class="row">
 							<div class="col-md-8">
 								<div class="row form-group">
+									<label class="col-md-2 control-label">Listening Interface</label>
+									<div class="col-md-6">
+										<select class="form-control" ng-model="settings_ifaceName" ng-options="iface for iface in available_interfaces">
+										</select>
+									</div>
+								</div>
+								<div class="row form-group">
 									<label class="col-md-2 control-label">Multicast Group</label>
 									<div class="col-md-6">
 										<input type="text" ng-model="settings_mcastGroup" class="form-control">

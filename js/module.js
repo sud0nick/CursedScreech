@@ -10,6 +10,8 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.dependsInstalled		= false;
 	
 	// Settings vars
+	$scope.settings_ifaceName	= '';
+	$scope.available_interfaces	= '';
 	$scope.settings_mcastGroup	= '';
 	$scope.settings_mcastPort	= '';
 	$scope.settings_hb_interval	= '';
@@ -87,6 +89,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		},function(response){
 			if (response.success === true) {
 				var configs = response.data;
+				$scope.settings_ifaceName = configs.iface_name;
 				$scope.settings_mcastGroup = configs.mcast_group;
 				$scope.settings_mcastPort = configs.mcast_port;
 				$scope.settings_hb_interval = configs.hb_interval;
@@ -101,6 +104,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		$scope.showSettingsThrobber = true;
 		// Add the settings variables to a dictionary
 		data = {
+			'iface_name': $scope.settings_ifaceName,
 			'mcast_group': $scope.settings_mcastGroup,
 			'mcast_port': $scope.settings_mcastPort,
 			'hb_interval': $scope.settings_hb_interval,
@@ -132,6 +136,20 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		} else if (setting == "auth") {
 			$scope.settings_auth = false;
 		}
+	});
+	
+	$scope.loadAvailableInterfaces = (function(){
+		$api.request({
+			module: 'CursedScreech',
+			action: 'loadAvailableInterfaces'
+		},function(response){
+			console.log(response);
+			if (response.success === true) {
+				$scope.available_interfaces = response.data;
+			} else {
+				alert("An error has occurred.  Check the logs for details");
+			}
+		});
 	});
 
 	
@@ -548,6 +566,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		$scope.stop = undefined;
 	});
 	
+	$scope.loadAvailableInterfaces();
 	$scope.loadSettings();
 	$scope.loadEZCmds();
 	$scope.getLogs('changelog');

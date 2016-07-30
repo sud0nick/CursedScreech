@@ -91,6 +91,9 @@ class CursedScreech extends Module {
 			case 'clearDownloads':
 				$this->clearDownloads();
 				break;
+			case 'loadAvailableInterfaces':
+				$this->loadAvailableInterfaces();
+				break;
 		}
 	}
 	
@@ -158,6 +161,9 @@ class CursedScreech extends Module {
 		// Get the serial number of the target's public cert
 		$configs['client_serial'] = exec(__SCRIPTS__ . "getCertSerial.sh " . $configs['target_key'] . ".cer");
 		$configs['kuro_serial'] = exec(__SCRIPTS__ . "getCertSerial.sh " . $configs['kuro_key'] . ".cer");
+		
+		// Get the IP address of the selected listening interface
+		$configs['iface_ip'] = exec(__SCRIPTS__ . "getInterfaceIP.sh " . $configs['iface_name']);
 		
 		// Push the updated settings back out to the file
 		$config_file = fopen(__SETTINGS__, "w");
@@ -376,6 +382,16 @@ class CursedScreech extends Module {
 		}
 		$this->respond($success);
 		return $success;
+	}
+	
+	private function loadAvailableInterfaces() {
+		$data = array();
+		exec(__SCRIPTS__ . "getListeningInterfaces.sh", $data);
+		if ($data == NULL) {
+			$this->logError("Load_Interfaces_Error", "Failed to load available interfaces for 'Listening Interface' dropdown.  Either the getListneingInterfaces.sh script failed or none of your interfaces have an IP address associated with them.");
+			$this->respond(false);
+		}
+		$this->respond(true, null, $data);
 	}
 	
 	/* ============================ */

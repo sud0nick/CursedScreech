@@ -7,7 +7,7 @@ import time
 
 # Load settings from file and assign to vars
 settingsFile = "/pineapple/modules/CursedScreech/includes/forest/settings"
-MCAST_GROUP = target_list = activity_log = ""
+MCAST_GROUP = IFACE = target_list = activity_log = ""
 MCAST_PORT = hbInterval = 0
 settings = {}
 with open(settingsFile, "r") as sFile:
@@ -23,6 +23,8 @@ with open(settingsFile, "r") as sFile:
 			MCAST_PORT = int(params[1])
 		elif params[0] == "hb_interval":
 			hbInterval = int(params[1])
+		elif params[0] == "iface_ip":
+			IFACE = params[1]
 		else:
 			pass
 			
@@ -51,8 +53,7 @@ def writeTargets(targets):
 sck = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 sck.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sck.bind((MCAST_GROUP, MCAST_PORT))
-mreq = struct.pack("4sl", socket.inet_aton(MCAST_GROUP), socket.INADDR_ANY)
-sck.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+sck.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, socket.inet_aton(MCAST_GROUP)+socket.inet_aton(IFACE))
 
 # Import targets from file if any exist
 targets = []
@@ -85,10 +86,13 @@ threads.append(newThread)
 newThread.start()
 
 while True:
+	print "Waiting for heartbeat..."
 	try:
 		msg = sck.recv(10240)
 		ip = msg.split(":")[0]
 		port = msg.split(":")[1]
+
+		print "Received: " + msg
 
 		# The heartbeat is sometimes used to send a message telling us
 		# when an invalid cert was sent to the target. This can be a sign
