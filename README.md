@@ -57,7 +57,7 @@ namespace Payload
 
 ### Python API Example
 ```
-from CursedScreech import CursedScreech
+from PineappleModules import CursedScreech
 
 cs = CursedScreech("Network Client")
 cs.startMulticaster("231.253.78.29", 19578)
