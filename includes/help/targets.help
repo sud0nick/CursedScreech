@@ -23,3 +23,8 @@ reappear in the list.
 <h4>All Logs</h4>
 View, download, and delete logs from all clients, even those who were once connected but no longer 
 show up in the target list.
+<br /><br />
+
+<h4>Payloads</h4>
+Manage payloads that can be sent to targets.  Use the 'Configure Upload Limit' link if your payload fails to upload
+due to size restrictions.

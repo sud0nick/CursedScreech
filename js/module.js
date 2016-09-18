@@ -1,9 +1,13 @@
-registerController('CursedScreechController', ['$api', '$scope', '$sce', '$interval', function($api, $scope, $sce, $interval) {
+registerController('CursedScreechController', ['$api', '$scope', '$sce', '$interval', '$http', function($api, $scope, $sce, $interval, $http) {
+	
+	// Location of payload directory
+	$scope.payloadDir = "/pineapple/modules/CursedScreech/includes/payloads/";
 	
 	// Throbbers
 	$scope.showSettingsThrobber	= false;
 	$scope.showSeinThrobber		= false;
 	$scope.showKuroThrobber		= false;
+	$scope.uploadLimitThrobber	= false;
 	
 	// Depends vars
 	$scope.dependsProcessing	= false;
@@ -24,6 +28,8 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.seinButton			= 'Start';
 	$scope.kuroStatus			= 'Not Running';
 	$scope.kuroButton			= 'Start';
+	$scope.seinIsRunning		= false;
+	$scope.kuroIsRunning		= false;
 	
 	// Log vars
 	$scope.currentLogTitle		= '';
@@ -45,6 +51,17 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.newCmdName			= "";
 	$scope.newCmdCommand		= "";
 	$scope.checkAllTargets		= false;
+	
+	// Panes
+	$scope.showTargetPane		= true;
+	$scope.showPayloadPane		= false;
+	
+	// Payload Vars
+	$scope.payloads				= [];
+	$scope.selectedFiles		= [];
+	$scope.uploading			= false;
+	$scope.selectedPayload		= "";
+	$scope.showPayloadSelect	= false;
 	
 	// Interval vars
 	$scope.stop;
@@ -143,7 +160,6 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			module: 'CursedScreech',
 			action: 'loadAvailableInterfaces'
 		},function(response){
-			console.log(response);
 			if (response.success === true) {
 				$scope.available_interfaces = response.data;
 			} else {
@@ -170,12 +186,14 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		},function(response) {
 			if (name == "sein.py") {
 				if (response.success === true){
+					$scope.seinIsRunning = true;
 					$scope.seinStatus = "Running - PID: " + response.data;
 					$scope.seinButton = "Stop";
 				}
 				$scope.showSeinThrobber	= false;
 			} else if (name == "kuro.py") {
 				if (response.success === true) {
+					$scope.kuroIsRunning = true;
 					$scope.kuroStatus = "Running - PID: " + response.data;
 					$scope.kuroButton = "Stop";
 				}
@@ -193,17 +211,21 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			//console.log(response);
 			if (response.success == true) {
 				if (name == "sein.py") {
+					$scope.seinIsRunning = true;
 					$scope.seinStatus = "Running - PID: " + response.data;
 					$scope.seinButton = "Stop";
 				} else if (name == "kuro.py") {
+					$scope.kuroIsRunning = true;
 					$scope.kuroStatus = "Running - PID: " + response.data;
 					$scope.kuroButton = "Stop";
 				}
 			} else {
 				if (name == "sein.py") {
+					$scope.seinIsRunning = false;
 					$scope.seinStatus = "Not Running";
 					$scope.seinButton = "Start";
 				} else if (name == "kuro.py") {
+					$scope.kuroIsRunning = false;
 					$scope.kuroStatus = "Not Running";
 					$scope.kuroButton = "Start";
 				}
@@ -219,9 +241,11 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		},function(response) {
 			if (response.success === true){
 				if (name == "sein.py") {
+					$scope.seinIsRunning = false;
 					$scope.seinStatus = "Not Running";
 					$scope.seinButton = "Start";
 				} else if (name == "kuro.py") {
+					$scope.kuroIsRunning = false;
 					$scope.kuroStatus = "Not Running";
 					$scope.kuroButton = "Start";
 				}
@@ -235,7 +259,7 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	
 	$scope.genPayload = (function(type){
 		
-		// Check if PortalAuth authorization should be used
+		// Check if CursedScreech authorization should be used
 		// if so change the type to 'cs_auth'
 		if (type == "cs" && $scope.settings_auth == true) {
 			type = "cs_auth";
@@ -283,10 +307,19 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 		if (checkedTargets.length == 0) {
 			return;
 		}
+		
+		// Check if a payload is to be sent and build its command string
+		var cmd = "";
+		if ($scope.showPayloadSelect) {
+			// ex: "sendfile;/pineapple/modules/CursedScreech/includes/payloads/NetCli.exe;C:\Temp\"
+			cmd = "sendfile;" + $scope.payloadDir + $scope.selectedPayload.fileName + ";" + $scope.targetCommand;
+		} else {
+			cmd = $scope.targetCommand;
+		}
 		$api.request({
 			module: 'CursedScreech',
 			action: 'sendCommand',
-			command: $scope.targetCommand,
+			command: cmd,
 			targets: checkedTargets
 		},function(response){});
 	});
@@ -378,7 +411,6 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	/* ============================================= */
 	
 	$scope.loadEZCmds = (function(){
-		$scope.ezcmdKeys = [];
 		$api.request({
 			module: 'CursedScreech',
 			action: 'loadEZCmds'
@@ -427,7 +459,18 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	
 	$scope.ezCommandChange = (function(){
 		if ($scope.selectedCmd === null) {
+			$scope.targetCommand = "";
+			$scope.showPayloadSelect = false;
 			return;
+		}
+		for (key in $scope.ezcmds) {
+			if ($scope.ezcmds[key] == $scope.selectedCmd) {
+				if (key == "Send File") {
+					$scope.showPayloadSelect = true;
+				} else {
+					$scope.showPayloadSelect = false;
+				}
+			}
 		}
 		$scope.targetCommand = $scope.selectedCmd;
 	});
@@ -527,7 +570,11 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 			action: 'clearLog',
 			logName: log,
 			type: type
-		},function(response){});
+		},function(response){
+			if (log == "activity.log") {
+				$scope.readLog("activity.log", "forest");
+			}
+		});
 	});
 
 	$scope.deleteLog = (function(log, type){
@@ -551,10 +598,108 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	
 	$scope.refreshLogs = (function(){
 		$scope.getLogs("error");
-		$scope.loadTargets();
-		$scope.readLog("activity.log", "forest");
+		if ($scope.seinIsRunning) {
+			$scope.loadTargets();
+		}
+		if ($scope.kuroIsRunning) {
+			$scope.readLog("activity.log", "forest");
+		}
 	});
 	
+	/* ============================================= */
+	/*            BEGIN PAYLOAD FUNCTIONS            */
+	/* ============================================= */
+	
+	$scope.setSelectedFiles = (function(){
+		files = document.getElementById("selectedFiles").files;
+		for (var x = 0; x < files.length; x++) {
+			$scope.selectedFiles.push(files[x]);
+		}
+	});
+	
+	$scope.removeSelectedFile = (function(file){
+		var x = $scope.selectedFiles.length;
+		while (x--) {
+			if ($scope.selectedFiles[x] === file) {
+				$scope.selectedFiles.splice(x,1);
+			}
+		}
+	});
+	
+	$scope.uploadFile = (function(){
+		$scope.uploading = true;
+		
+		var fd = new FormData();
+		for (x = 0; x < $scope.selectedFiles.length; x++) {
+			fd.append($scope.selectedFiles[x].name, $scope.selectedFiles[x]);
+		}
+		$http.post("/modules/CursedScreech/api/module.php", fd, {
+			transformRequest: angular.identity,
+			headers: {'Content-Type': undefined}
+		}).success(function(response) {
+			for (var key in response) {
+				if (response.hasOwnProperty(key)) {
+					if (response.key == "Failed") {
+						alert("Failed to upload " + key);
+					}
+				}
+			}
+			$scope.selectedFiles = [];
+			$scope.getPayloads();
+			$scope.uploading = false;
+		});
+	});
+	
+	$scope.getPayloads = (function(){
+		$api.request({
+			module: 'CursedScreech',
+			action: 'getPayloads'
+		},function(response){
+			$scope.payloads = [];
+			for (var key in response.data) {
+				if (response.data.hasOwnProperty(key)) {
+					var obj = {fileName: key, filePath: response.data[key]};
+					$scope.payloads.push(obj);
+				}
+			}
+		});
+	});
+	
+	$scope.deletePayload = (function(payload){
+		var res = confirm("Press OK to confirm deletion of " + payload.fileName + ".");
+		if (!res) {return;}
+		$api.request({
+			module: 'CursedScreech',
+			action: 'deletePayload',
+			filePath: payload.filePath + payload.fileName
+		},function(response){
+			$scope.getPayloads();
+		});
+	});
+	
+	$scope.configUploadLimit = (function(){
+		$scope.uploadLimitThrobber = true;
+		$api.request({
+			module: 'CursedScreech',
+			action: 'cfgUploadLimit'
+		},function(response){
+			if (response.success === true) {
+				alert("Upload limit configured successfully.");
+			} else {
+				alert("Failed to configure upload limit.");
+			}
+			$scope.uploadLimitThrobber = false;
+		});
+	});
+	
+	/* ============================================= */
+	/*                MISC FUNCTIONS                 */
+	/* ============================================= */
+	$scope.swapPane = (function(pane) {
+		if (pane) { return; }
+		$scope.showTargetPane = !$scope.showTargetPane;
+		$scope.showPayloadPane = !$scope.showPayloadPane;
+	});
 	
 	/* ============================================= */
 	/*                  INITIALIZERS                 */
@@ -569,14 +714,21 @@ registerController('CursedScreechController', ['$api', '$scope', '$sce', '$inter
 	$scope.loadAvailableInterfaces();
 	$scope.loadSettings();
 	$scope.loadEZCmds();
+	$scope.getPayloads();
 	$scope.getLogs('changelog');
 	$scope.depends('check');
 	$scope.clearDownloads();
+	$scope.procStatus('sein.py');
+	$scope.procStatus('kuro.py');
 	
 	$scope.stop = $interval(function(){
 		$scope.refreshLogs();
-		$scope.procStatus('sein.py');
-		$scope.procStatus('kuro.py');
+		if ($scope.seinIsRunning) {
+			$scope.procStatus('sein.py');
+		}
+		if ($scope.kuroIsRunning) {
+			$scope.procStatus('kuro.py');
+		}
 	}, 2000);
 	
 }])

@@ -15,6 +15,7 @@ define('__HELPFILES__', __INCLUDES__ . "help/");
 define('__CHANGELOGS__', __INCLUDES__ . "changelog/");
 define('__LOGS__', __INCLUDES__ . "errorlogs/");
 define('__TARGETLOGS__', __FOREST__ . "targetlogs/");
+define('__PAYLOADS__', __INCLUDES__ . "payloads/");
 
 // API defines
 define('__API_CS__', __INCLUDES__ . "api/cs/");
@@ -22,10 +23,43 @@ define('__API_PY__', __INCLUDES__ . "api/python/");
 define('__API_DL__', __INCLUDES__ . "api/downloads/");
 
 // File location defines
+define('__ACTIVITYLOG__', __FOREST__ . 'activity.log');
 define('__SETTINGS__', __FOREST__ . 'settings');
 define('__TARGETS__', __FOREST__ . "targets.log");
 define('__COMMANDLOG__', __FOREST__ . "cmd.log");
 define('__EZCMDS__', __FOREST__ . "ezcmds");
+
+
+/*
+	Move the uploaded file to the payloads directory
+*/
+if (!empty($_FILES)) {
+	$response = [];
+	foreach ($_FILES as $file) {
+		$tempPath = $file[ 'tmp_name' ];
+		$name = $file['name'];
+		
+		// Ensure the upload directory exists
+		if (!file_exists(__PAYLOADS__)) {
+			if (!mkdir(__PAYLOADS__, 0755, true)) {
+				$response[$name] = "Failed";
+				echo json_encode($response);
+				die();
+			}
+		}
+		
+		$uploadPath = __PAYLOADS__ . $name;
+		$res = move_uploaded_file($tempPath, $uploadPath);
+		
+		if ($res) {
+			$response[$name] = "Success";
+		} else {
+			$response[$name] = "Failed";
+		}
+	}
+	echo json_encode($response);
+	die();
+}
 
 class CursedScreech extends Module {
 	public function route() {
@@ -93,6 +127,15 @@ class CursedScreech extends Module {
 				break;
 			case 'loadAvailableInterfaces':
 				$this->loadAvailableInterfaces();
+				break;
+			case 'getPayloads':
+				$this->getPayloads();
+				break;
+			case 'deletePayload':
+				$this->deletePayload($this->request->filePath);
+				break;
+			case 'cfgUploadLimit':
+				$this->cfgUploadLimit();
 				break;
 		}
 	}
@@ -180,6 +223,9 @@ class CursedScreech extends Module {
 	/* ============================ */
 	
 	private function startProc($procName) {
+		if ($procName == "kuro.py") {
+			file_put_contents(__ACTIVITYLOG__, "[+] Starting Kuro...\n", FILE_APPEND);
+		}
 		$cmd = "python " . __FOREST__ . $procName . " > /dev/null 2>&1 &";
 		exec($cmd);
 		
@@ -212,6 +258,7 @@ class CursedScreech extends Module {
 		
 		// Kuro requires a special bullet
 		if ($procName == "kuro.py") {
+			file_put_contents(__ACTIVITYLOG__, "[!] Stopping Kuro...\n", FILE_APPEND);
 			exec("echo 'killyour:self' >> " . __COMMANDLOG__);
 		} else {
 			// Kill the process
@@ -392,6 +439,43 @@ class CursedScreech extends Module {
 			$this->respond(false);
 		}
 		$this->respond(true, null, $data);
+	}
+	
+	//=========================//
+	//    PAYLOAD FUNCTIONS    //
+	//=========================//
+	
+	private function getPayloads() {
+		$files = [];
+		
+		foreach (scandir(__PAYLOADS__) as $file) {
+			if ($file == "." || $file == "..") {continue;}
+			$files[$file] = __PAYLOADS__;
+		}
+		$this->respond(true, null, $files);
+		return $files;
+	}
+	
+	private function deletePayload($filePath) {
+		if (!unlink($filePath)) {
+			$this->logError("Delete Payload", "Failed to delete payload at path " . $filePath);
+			$this->respond(false);
+			return false;
+		}
+		$this->respond(true);
+		return true;
+	}
+	
+	private function cfgUploadLimit() {
+		$data = array();
+		$res = exec("python " . __SCRIPTS__ . "cfgUploadLimit.py > /dev/null 2>&1 &", $data);
+		if ($res != "") {
+			$this->logError("cfg_upload_limit_error", $data);
+			$this->respond(false);
+			return false;
+		}
+		$this->respond(true);
+		return true;
 	}
 	
 	/* ============================ */

