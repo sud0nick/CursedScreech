@@ -1,5 +1,7 @@
 # CursedScreech
 
+> :warning: **This module is no longer being maintained**
+
 A mass communicator module for the WiFi Pineapple that utilizes TLS to control a botnet of compromised systems.  Included is a C# API and Python API (with documentation) to write payloads that can communicate with CursedScreech and PortalAuth.
 
 
